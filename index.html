@@ -1,40 +1,39 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>QR Scanner</title>
-<script src="https://unpkg.com/html5-qrcode"></script>
-</head>
-<body>
-
-<h2>Scan QR</h2>
-<div id="reader" style="width:300px"></div>
-<p>Result: <span id="result"></span></p>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
 
 <script>
 const scriptURL = "https://script.google.com/macros/s/AKfycbywT6UPBFdP6BN2UOdL2OMdgxGqHtJZWJSzgJwNsqylvsdFfkcnChmnP9L3lBlf2tko2A/exec";
 
-function onScanSuccess(decodedText) {
+const html5QrCode = new Html5Qrcode("reader");
 
-    document.getElementById("result").innerText = decodedText;
+function startScanner() {
+    Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length) {
+            let cameraId = devices[0].id;
 
-    fetch(scriptURL, {
-        method: "POST",
-        body: JSON.stringify({ code: decodedText })
-    })
-    .then(response => response.text())
-    .then(data => console.log(data))
-    .catch(error => console.error("Error:", error));
+            html5QrCode.start(
+                cameraId,
+                {
+                    fps: 10,
+                    qrbox: 250
+                },
+                qrCodeMessage => {
+
+                    document.getElementById("result").innerText = qrCodeMessage;
+
+                    fetch(scriptURL, {
+                        method: "POST",
+                        body: JSON.stringify({ code: qrCodeMessage })
+                    });
+
+                    html5QrCode.stop(); // dừng sau khi quét 1 lần
+                },
+                errorMessage => {
+                    // bỏ qua lỗi quét
+                }
+            );
+        }
+    }).catch(err => console.log(err));
 }
 
-let html5QrcodeScanner = new Html5QrcodeScanner(
-    "reader",
-    { fps: 10, qrbox: 250 },
-    false
-);
-
-html5QrcodeScanner.render(onScanSuccess);
+startScanner();
 </script>
-
-</body>
-</html>
